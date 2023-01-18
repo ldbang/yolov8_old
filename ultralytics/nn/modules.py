@@ -36,7 +36,7 @@ class Conv(nn.Module):
 
     def forward_fuse(self, x):
         return self.act(self.conv(x))
-class SimConv(nn.Module):Sim
+class SimConv(nn.Module):
     # Standard convolution with args(ch_in, ch_out, kernel, stride, padding, groups, dilation, activation)
     default_act = nn.ReLU()  # default activation
 
