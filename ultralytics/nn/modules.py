@@ -316,6 +316,31 @@ class SPPF1(nn.Module):
         self.cv1 = Conv(c1, c_, 1, 1)
         self.cv2 = Conv(c_ * 4, c2, 1, 1)
         self.m = nn.MaxPool2d(kernel_size=k, stride=1, padding=k // 2)
+        
+class SimCSPSPPF(nn.Module):
+    # CSP https://github.com/WongKinYiu/CrossStagePartialNetworks
+    def __init__(self, in_channels, out_channels, kernel_size=5, e=0.5):
+        super(SimCSPSPPF, self).__init__()
+        c_ = int(out_channels * e)  # hidden channels
+        self.cv1 = SimConv(in_channels, c_, 1, 1)
+        self.cv2 = SimConv(in_channels, c_, 1, 1)
+        self.cv3 = SimConv(c_, c_, 3, 1)
+        self.cv4 = SimConv(c_, c_, 1, 1)
+        
+        self.m = nn.MaxPool2d(kernel_size=kernel_size, stride=1, padding=kernel_size // 2)
+        self.cv5 = SimConv(4 * c_, c_, 1, 1)
+        self.cv6 = SimConv(c_, c_, 3, 1)
+        self.cv7 = SimConv(2 * c_, out_channels, 1, 1)
+
+    def forward(self, x):
+        x1 = self.cv4(self.cv3(self.cv1(x)))
+        y0 = self.cv2(x)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            y1 = self.m(x1)
+            y2 = self.m(y1)
+            y3 =self.cv6(self.cv5(torch.cat([x1, y1, y2, self.m(y2)], 1)))
+        return self.cv7(torch.cat((y0, y3), dim=1))
 
     def forward(self, x):
         x = self.cv1(x)
