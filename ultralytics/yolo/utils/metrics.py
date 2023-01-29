@@ -103,7 +103,7 @@ def bbox_iou(box1, box2, xywh=True, GIoU=False, DIoU=False, CIoU=False, SIoU = F
                 rho_h2 = ((b2_y2 - b2_y1) - (b1_y2 - b1_y1)) ** 2
                 cw2 = cw ** 2 + eps
                 ch2 = ch ** 2 + eps
-                print("eiou")
+#                 print("eiou")
                 return iou - (rho2 / c2 + rho_w2 / cw2 + rho_h2 / ch2)
             return iou - rho2 / c2  # DIoU
         elif SIoU:
@@ -123,7 +123,7 @@ def bbox_iou(box1, box2, xywh=True, GIoU=False, DIoU=False, CIoU=False, SIoU = F
             omiga_h = torch.abs(h1 - h2) / torch.max(h1, h2)
             shape_cost = torch.pow(1 - torch.exp(-1 * omiga_w), 4) + torch.pow(1 - torch.exp(-1 * omiga_h), 4)
             iou = iou - 0.5 * (distance_cost + shape_cost) #SIoU
-            print("SIoU")
+#             print("SIoU")
             return iou
         c_area = cw * ch + eps  # convex area
         return iou - (c_area - union) / c_area  # GIoU https://arxiv.org/pdf/1902.09630.pdf
