@@ -270,7 +270,7 @@ class C2f_CABM(nn.Module):
         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
         self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
         self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
-        self.channel_attention = ChannelAttention_1(c2, 16)
+        self.channel_attention = ChannelAttention(c1)
         self.spatial_attention = SpatialAttention(7)
         
     def forward(self, x):
