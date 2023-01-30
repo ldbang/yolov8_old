@@ -279,12 +279,7 @@ class C2f_CABM(nn.Module):
 #         return self.cv2(torch.cat(y, 1))
         return self.spatial_attention(self.channel_attention(self.cv2(torch.cat(y, 1))))
 
- class ECA(nn.Module):
-     """Constructs a ECA module.
-     Args:
-         channel: Number of channels of the input feature map
-         k_size: Adaptive selection of kernel size
-     """
+class ECA(nn.Module):
      def __init__(self, channel, k_size=3):
          super(ECA, self).__init__()
          self.avg_pool = nn.AdaptiveAvgPool2d(1)
