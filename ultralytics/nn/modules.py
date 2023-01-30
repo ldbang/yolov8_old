@@ -215,7 +215,28 @@ class ChannelAttention(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return x * self.act(self.fc(self.pool(x)))
+    
+class ChannelAttention_1(nn.Module):
+    def __init__(self, in_planes, ratio=16):
+        super(ChannelAttention, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.max_pool = nn.AdaptiveMaxPool2d(1)
 
+        self.f1 = nn.Conv2d(in_planes, in_planes // ratio, 1, bias=False)
+        self.relu = nn.ReLU()
+        self.f2 = nn.Conv2d(in_planes // ratio, in_planes, 1, bias=False)
+        # 写法二,亦可使用顺序容器
+        # self.sharedMLP = nn.Sequential(
+        # nn.Conv2d(in_planes, in_planes // ratio, 1, bias=False), nn.ReLU(),
+        # nn.Conv2d(in_planes // rotio, in_planes, 1, bias=False))
+
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        avg_out = self.f2(self.relu(self.f1(self.avg_pool(x))))
+        max_out = self.f2(self.relu(self.f1(self.max_pool(x))))
+        out = self.sigmoid(avg_out + max_out)
+        return torch.mul(x, out)
 
 class SpatialAttention(nn.Module):
     # Spatial-attention module
@@ -249,7 +270,7 @@ class C2f_CABM(nn.Module):
         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
         self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
         self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
-        self.channel_attention = ChannelAttention(c2, 16)
+        self.channel_attention = ChannelAttention_1(c2, 16)
         self.spatial_attention = SpatialAttention(7)
         
     def forward(self, x):
