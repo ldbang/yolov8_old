@@ -7,7 +7,7 @@ import thop
 import torch
 import torch.nn as nn
 
-from ultralytics.nn.modules import (C1, C2, C3, C3TR, SPP, SPPF1,SPPF,SimSPPF,SimCSPSPPF, SE,SimAM,Bottleneck, BottleneckCSP, C2f,C2f_CABM,CBAM,CBAM_2,ECA, C3Ghost, C3x, Classify,
+from ultralytics.nn.modules import (C1, C2, C3, C3TR, SPP, SPPF1,SPPF,SimSPPF,SimCSPSPPF, SE,SimAM,Bottleneck, BottleneckCSP, C2f,C2f_CABM,CBAM,CBAM_2,ECA,space_to_depth, C3Ghost, C3x, Classify,
                                     Concat, Conv, ConvTranspose, Detect, DWConv, DWConvTranspose2d, Ensemble, Focus,
                                     GhostBottleneck, GhostConv, Segment)
 from ultralytics.yolo.utils import DEFAULT_CONFIG_DICT, DEFAULT_CONFIG_KEYS, LOGGER, colorstr, yaml_load
@@ -398,6 +398,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [ch[f]]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
+        elif m is space_to_depth:
+            c2 = 4*ch[f]
         elif m in {Detect, Segment}:
             args.append([ch[x] for x in f])
             if m is Segment:
