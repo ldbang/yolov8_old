@@ -132,7 +132,7 @@ class TaskAlignedAssigner(nn.Module):
         align_metric = bbox_scores.pow(self.alpha) * overlaps.pow(self.beta)
         return align_metric, overlaps
 
-    def select_topk_candidates(self, metrics, largest=True, topk_mask=None):C
+    def select_topk_candidates(self, metrics, largest=True, topk_mask=None):
         """
         Args:
             metrics: (b, max_num_obj, h*w).
