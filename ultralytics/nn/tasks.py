@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 
 from ultralytics.nn.modules import (C1, C2, C3, C3TR, SPP, SPPF1,SPPF,SimSPPF,SimCSPSPPF, SE,SimAM,Bottleneck, BottleneckCSP, C2f,C2f_CABM,C2f_rep,CBAM,CBAM_2,ECA,space_to_depth, C3Ghost, C3x, Classify,
-                                    Concat, Conv, ConvTranspose, Detect, DWConv, DWConvTranspose2d, Ensemble, Focus,RepBottleneck,
+                                    Concat, Conv, ConvTranspose, Detect, DWConv, DWConvTranspose2d, Ensemble, Focus,RepBottleneck,RepC3,
                                     GhostBottleneck, GhostConv, Segment)
 from ultralytics.yolo.utils import DEFAULT_CONFIG_DICT, DEFAULT_CONFIG_KEYS, LOGGER, colorstr, yaml_load
 from ultralytics.yolo.utils.checks import check_yaml
@@ -384,14 +384,14 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
 
         n = n_ = max(round(n * gd), 1) if n > 1 else n  # depth gain
         if m in {
-                Classify, Conv, ConvTranspose, GhostConv, Bottleneck, GhostBottleneck, SPP, SPPF1, SPPF,SimSPPF,SimCSPSPPF,DWConv, Focus,RepBottleneck,
+                Classify, Conv, ConvTranspose, GhostConv, Bottleneck, GhostBottleneck, SPP, SPPF1, SPPF,SimSPPF,SimCSPSPPF,DWConv, Focus,RepBottleneck,RepC3,
                 BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x,SE,ECA,SimAM,C2f_CABM,C2f_rep,CBAM,CBAM_2}:
             c1, c2 = ch[f], args[0]
             if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
                 c2 = make_divisible(c2 * gw, 8)
 
             args = [c1, c2, *args[1:]]
-            if m in {BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, C3x, SE,ECA,SimAM,C2f_CABM,C2f_rep,CBAM,CBAM_2}:
+            if m in {BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, C3x, RepC3,SE,ECA,SimAM,C2f_CABM,C2f_rep,CBAM,CBAM_2}:
                 args.insert(2, n)  # number of repeats
                 n = 1
         elif m is nn.BatchNorm2d:
