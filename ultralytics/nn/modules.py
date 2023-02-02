@@ -36,18 +36,19 @@ class Conv(nn.Module):
 
     def forward_fuse(self, x):
         return self.act(self.conv(x))
-    
-def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):
+# def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):  
+def conv_bn(c1, c2, k, s, p, g=1,d=1):
     result = nn.Sequential()
-    result.add_module('conv', nn.Conv2d(in_channels=in_channels, out_channels=out_channels,
-                                                  kernel_size=kernel_size, stride=stride, padding=padding, groups=groups, bias=False))
+#     result.add_module('conv', nn.Conv2d(in_channels=in_channels, out_channels=out_channels,
+#                                                   kernel_size=kernel_size, stride=stride, padding=padding, groups=groups, bias=False))
+    result.add_module('conv', nn.Conv2d(c1, c2, k, s, autopad(k, p, d), groups=g, dilation=d, bias=False))
     result.add_module('bn', nn.BatchNorm2d(num_features=out_channels))
     return result
 class RepVGGBlock(nn.Module):
     '''RepVGGBlock is a basic rep-style block, including training and deploy status
     This code is based on https://github.com/DingXiaoH/RepVGG/blob/main/repvgg.py
     '''
-    def __init__(self, c1, c2, k=1, s=1, p=1, g=1, d=1, padding_mode='zeros', deploy=False, use_se=False):
+    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, d=1, padding_mode='zeros', deploy=False, use_se=False):
     # def __init__(self, in_channels, out_channels, kernel_size=3,
     #             stride=1, padding=1, dilation=1, groups=1, padding_mode='zeros', deploy=False, use_se=False):
         super(RepVGGBlock, self).__init__()
@@ -96,8 +97,8 @@ class RepVGGBlock(nn.Module):
 
         else:
             self.rbr_identity = nn.BatchNorm2d(num_features=in_channels) if out_channels == in_channels and stride == 1 else None
-            self.rbr_dense = conv_bn(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding, groups=groups)
-            self.rbr_1x1 = conv_bn(in_channels=in_channels, out_channels=out_channels, kernel_size=1, stride=stride, padding=padding_11, groups=groups)
+            self.rbr_dense = conv_bn(c1=in_channels, c2=out_channels, k=kernel_size, s=stride, p=padding, g=groups,d=dilation)
+            self.rbr_1x1 = conv_bn(c1=in_channels, c2=out_channels, k=1, s=stride, p=padding_11, g=groups,d=dilation)
 
     def forward(self, inputs):
         '''Forward process'''
