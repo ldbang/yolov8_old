@@ -215,7 +215,28 @@ class ChannelAttention(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return x * self.act(self.fc(self.pool(x)))
+    
+class ChannelAttention_1(nn.Module):
+    def __init__(self, in_planes, ratio=16):
+        super(ChannelAttention, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.max_pool = nn.AdaptiveMaxPool2d(1)
 
+        self.f1 = nn.Conv2d(in_planes, in_planes // ratio, 1, bias=False)
+        self.relu = nn.ReLU()
+        self.f2 = nn.Conv2d(in_planes // ratio, in_planes, 1, bias=False)
+        # 写法二,亦可使用顺序容器
+        # self.sharedMLP = nn.Sequential(
+        # nn.Conv2d(in_planes, in_planes // ratio, 1, bias=False), nn.ReLU(),
+        # nn.Conv2d(in_planes // rotio, in_planes, 1, bias=False))
+
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        avg_out = self.f2(self.relu(self.f1(self.avg_pool(x))))
+        max_out = self.f2(self.relu(self.f1(self.max_pool(x))))
+        out = self.sigmoid(avg_out + max_out)
+        return torch.mul(x, out)
 
 class SpatialAttention(nn.Module):
     # Spatial-attention module
@@ -240,6 +261,112 @@ class CBAM(nn.Module):
     def forward(self, x):
         return self.spatial_attention(self.channel_attention(x))
 
+class C2f_CABM(nn.Module):
+    # CSP Bottleneck with 2 convolutions
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+#         super().__init__()
+        super(C2f_CABM, self).__init__()
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+        self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
+        self.channel_attention = ChannelAttention(c1)
+        self.spatial_attention = SpatialAttention(7)
+        
+    def forward(self, x):
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in self.m)
+#         return self.cv2(torch.cat(y, 1))
+        return self.spatial_attention(self.channel_attention(self.cv2(torch.cat(y, 1))))
+
+
+
+
+# CBAM
+class ChannelAttention_2(nn.Module):
+    def __init__(self, in_planes, ratio=16):
+        super(ChannelAttention_2, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.max_pool = nn.AdaptiveMaxPool2d(1)
+        self.f1 = nn.Conv2d(in_planes, in_planes // ratio, 1, bias=False)
+        self.relu = nn.ReLU()
+        self.f2 = nn.Conv2d(in_planes // ratio, in_planes, 1, bias=False)
+        self.sigmoid = nn.Sigmoid()
+    def forward(self, x):
+        avg_out = self.f2(self.relu(self.f1(self.avg_pool(x))))
+        max_out = self.f2(self.relu(self.f1(self.max_pool(x))))
+        out = self.sigmoid(avg_out + max_out)
+        return out
+class SpatialAttention_2(nn.Module):
+    def __init__(self, kernel_size=7):
+        super(SpatialAttention_2, self).__init__()
+        assert kernel_size in (3, 7), 'kernel size must be 3 or 7'
+        padding = 3 if kernel_size == 7 else 1
+        # (特征图的大小-算子的size+2*padding)/步长+1
+        self.conv = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
+        self.sigmoid = nn.Sigmoid()
+    def forward(self, x):
+        # 1*h*w
+        avg_out = torch.mean(x, dim=1, keepdim=True)
+        max_out, _ = torch.max(x, dim=1, keepdim=True)
+        x = torch.cat([avg_out, max_out], dim=1)
+        #2*h*w
+        x = self.conv(x)
+        #1*h*w
+        return self.sigmoid(x)
+class CBAM_2(nn.Module):
+    # CSP Bottleneck with 3 convolutions
+    def __init__(self, c1, c2, ratio=16, kernel_size=7):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super(CBAM_2, self).__init__()
+        self.channel_attention = ChannelAttention_2(c1, ratio)
+        self.spatial_attention = SpatialAttention_2(kernel_size)
+    def forward(self, x):
+        out = self.channel_attention(x) * x
+        # c*h*w
+        # c*h*w * 1*h*w
+        out = self.spatial_attention(out) * out
+        return out
+
+
+class space_to_depth(nn.Module):
+    # Changing the dimension of the Tensor
+    def __init__(self, dimension=1):
+        super().__init__()
+        self.d = dimension
+
+    def forward(self, x):
+         return torch.cat([x[..., ::2, ::2], x[..., 1::2, ::2], x[..., ::2, 1::2], x[..., 1::2, 1::2]], 1)
+
+
+
+
+
+
+
+
+
+
+
+
+class ECA(nn.Module):
+     def __init__(self, channel, k_size=3):
+         super(ECA, self).__init__()
+         self.avg_pool = nn.AdaptiveAvgPool2d(1)
+         self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
+         self.sigmoid = nn.Sigmoid()
+ 
+     def forward(self, x):
+         # feature descriptor on the global spatial information
+         y = self.avg_pool(x)
+ 
+         # Two different branches of ECA module
+         y = self.conv(y.squeeze(-1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(-1)
+ 
+         # Multi-scale information fusion
+         y = self.sigmoid(y)
+         x=x*y.expand_as(x)
+ 
+         return x * y.expand_as(x)
 
 class C1(nn.Module):
     # CSP Bottleneck with 1 convolution
@@ -316,6 +443,13 @@ class SPPF1(nn.Module):
         self.cv1 = Conv(c1, c_, 1, 1)
         self.cv2 = Conv(c_ * 4, c2, 1, 1)
         self.m = nn.MaxPool2d(kernel_size=k, stride=1, padding=k // 2)
+    def forward(self, x):
+        x = self.cv1(x)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')  # suppress torch 1.9.0 max_pool2d() warning
+            y1 = self.m(x)
+            y2 = self.m(y1)
+            return self.cv2(torch.cat((x, y1, y2, self.m(y2)), 1))
         
 class SimCSPSPPF(nn.Module):
     # CSP https://github.com/WongKinYiu/CrossStagePartialNetworks
@@ -342,13 +476,6 @@ class SimCSPSPPF(nn.Module):
             y3 =self.cv6(self.cv5(torch.cat([x1, y1, y2, self.m(y2)], 1)))
         return self.cv7(torch.cat((y0, y3), dim=1))
 
-    def forward(self, x):
-        x = self.cv1(x)
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')  # suppress torch 1.9.0 max_pool2d() warning
-            y1 = self.m(x)
-            y2 = self.m(y1)
-            return self.cv2(torch.cat((x, y1, y2, self.m(y2)), 1))
         
 class SimSPPF(nn.Module):
     # Spatial Pyramid Pooling - Fast (SPPF) layer for YOLOv5 by Glenn Jocher
@@ -386,6 +513,32 @@ class SE(nn.Module):
         y = self.sig(y)
         y = y.view(b, c, 1, 1)
         return x * y.expand_as(x)
+     
+class SimAM(torch.nn.Module):
+    def __init__(self, e_lambda=1e-4):
+        super(SimAM, self).__init__()
+
+        self.activaton = nn.Sigmoid()
+        self.e_lambda = e_lambda
+
+    def __repr__(self):
+        s = self.__class__.__name__ + '('
+        s += ('lambda=%f)' % self.e_lambda)
+        return s
+
+    @staticmethod
+    def get_module_name():
+        return "simam"
+
+    def forward(self, x):
+        b, c, h, w = x.size()
+
+        n = w * h - 1
+
+        x_minus_mu_square = (x - x.mean(dim=[2, 3], keepdim=True)).pow(2)
+        y = x_minus_mu_square / (4 * (x_minus_mu_square.sum(dim=[2, 3], keepdim=True) / n + self.e_lambda)) + 0.5
+
+        return x * self.activaton(y) 
         
 
 class Focus(nn.Module):
