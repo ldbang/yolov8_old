@@ -36,6 +36,31 @@ class Conv(nn.Module):
 
     def forward_fuse(self, x):
         return self.act(self.conv(x))
+    
+class RepVGGBlock_new(nn.Module):
+    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, d=1):
+        super().__init__()
+        assert k == 3
+        assert p == 1
+        p_1x1 = p - k // 2
+        k_1x1 = 1
+        
+        self.conv_3x3 = nn.Conv2d(c1, c2, k, s, autopad(k, p, d), groups=g, dilation=d, bias=False)
+        self.bn_3x3 = nn.BatchNorm2d(c2)
+        
+        self.conv_1x1 = nn.Conv2d(c1, c2, k_1x1, s, autopad(k_1x1, p_1x1, d), groups=g, dilation=d, bias=False)
+        self.bn_1x1 = nn.BatchNorm2d(c2)
+        
+        self.BN = nn.BatchNorm2d(num_features=c1) if c2 == c1 and s == 1 else None
+        self.ReLU = nn.ReLU()
+    def forward(self, x):
+        # return self.bn(self.conv(x))
+        if self.BN is None:
+            BN = 0
+        else:
+            BN = self.BN(x)
+        return self.ReLU((self.bn_3x3(self.conv_3x3(x)) + self.bn_1x1(self.conv_1x1(x)) + BN))
+    
 # def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):  
 def conv_bn(c1, c2, k, s, p, g=1,d=1):
     result = nn.Sequential()
@@ -176,8 +201,8 @@ class Bottleneck_rep(nn.Module):
     def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):  # ch_in, ch_out, shortcut, groups, kernels, expand
         super().__init__()
         c_ = int(c2 * e)  # hidden channels
-        self.cv1 = RepVGGBlock(c1, c_, k[0], 1)
-        self.cv2 = RepVGGBlock(c_, c2, k[1], 1, g=g)
+        self.cv1 = RepVGGBlock_new(c1, c_, k[0], 1)
+        self.cv2 = RepVGGBlock_new(c_, c2, k[1], 1, g=g)
         self.add = shortcut and c1 == c2
 
     def forward(self, x):
