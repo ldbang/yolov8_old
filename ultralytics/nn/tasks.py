@@ -401,6 +401,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         elif m is space_to_depth:
             c2 = 4*ch[f]
         elif m in {Detect, Segment}:
+            print(f,ch,"&&&&dsfsafsafsafafafafaf")
             args.append([ch[x] for x in f])
             if m is Segment:
                 args[2] = make_divisible(args[2] * gw, 8)
