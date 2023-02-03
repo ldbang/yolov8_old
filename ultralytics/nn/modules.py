@@ -998,7 +998,7 @@ class RepBottleneck(nn.Module):
         return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
 class RepBottleneck__(nn.Module):
     # Standard bottleneck
-    def __init__(self, c1, c2, shortcut=True, k=0,g=1, e=0.5):  # ch_in, ch_out, shortcut, groups, expansion
+    def __init__(self, c1, c2, shortcut=True, g=1, e=0.5):  # ch_in, ch_out, shortcut, groups, expansion
         super().__init__()
         c_ = int(c2 * e)  # hidden channels
         self.cv1 = Conv(c1, c_, 1, 1)
@@ -1028,7 +1028,7 @@ class RepC2f(nn.Module):
         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
         self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
 #         self.m = nn.ModuleList(RepBottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
-        self.m = nn.ModuleList(RepBottleneck(self.c, self.c, shortcut, g, k=0, e=1.0) for _ in range(n))
+        self.m = nn.ModuleList(RepBottleneck(self.c, self.c, shortcut, g, e=1.0) for _ in range(n))
     def forward(self, x):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
