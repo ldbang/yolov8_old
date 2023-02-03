@@ -791,7 +791,7 @@ class RepConv(nn.Module):
     # Represented convolution
     # https://arxiv.org/abs/2101.03697
 
-    def __init__(self, c1, c2, k=3, s=1, p=None, g=1, act=True, deploy=False, use_se=False):
+    def __init__(self, c1, c2, k=3, s=1, p=None, g=1, act=True, deploy=False, use_se=True):
         super(RepConv, self).__init__()
 
         self.deploy = deploy
