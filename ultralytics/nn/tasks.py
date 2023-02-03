@@ -232,7 +232,7 @@ class ClassificationModel(BaseModel):
     def __init__(self,
                  cfg=None,
                  model=None,
-                 ch=3,
+                 ch=4,
                  nc=1000,
                  cutoff=10,
                  verbose=True):  # yaml, model, number of classes, cutoff index
