@@ -125,7 +125,7 @@ def bbox_iou(box1, box2, xywh=True, GIoU=False, DIoU=False, CIoU=False, SIoU = F
             shape_cost = torch.pow(1 - torch.exp(-1 * omiga_w), 4) + torch.pow(1 - torch.exp(-1 * omiga_h), 4)
             
 #             iou = iou - 0.5 * (distance_cost + shape_cost) #SIoU
-            iou = iou - 0.51 * distance_cost -0.49* shape_cost) #SIoU        
+            iou = iou - 0.51 * distance_cost -0.49* shape_cost #SIoU        
 #             print("SIoU")
             return iou
         c_area = cw * ch + eps  # convex area
