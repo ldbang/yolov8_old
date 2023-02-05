@@ -1042,12 +1042,12 @@ class CSPSPPF(nn.Module):
         c_ = int(out_channels * e)  # hidden channels
         self.cv1 = Conv(in_channels, c_, 1, 1)
         self.cv2 = Conv(in_channels, c_, 1, 1)
-        self.cv3 = GhostConv(c_, c_, 3, 1)
+        self.cv3 = Conv(c_, c_, 3, 1)
         self.cv4 = Conv(c_, c_, 1, 1)
         
         self.m = nn.MaxPool2d(kernel_size=kernel_size, stride=1, padding=kernel_size // 2)
         self.cv5 = Conv(4 * c_, c_, 1, 1)
-        self.cv6 = GhostConv(c_, c_, 3, 1)
+        self.cv6 = Conv(c_, c_, 3, 1)
         self.cv7 = Conv(2 * c_, out_channels, 1, 1)
 
     def forward(self, x):
