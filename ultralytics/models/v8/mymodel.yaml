@@ -52,8 +52,8 @@ head:
 #   - [[-1, 15], 1, Concat, [1]]  # cat backbone P4 
 #   - [[-1, 18, 21], 1, Detect, [nc]]  # Detect(P3, P4, P5)
   
-#   - [[3, 15], 1, Concat, [1]]  #版本4
-#   - [[-1, 18, 21], 1, Detect, [nc]]  # Detect(P3, P4, P5)
+  - [[3, 15], 1, Concat, [1]]  #版本4
+  - [[-1, 18, 21], 1, Detect, [nc]]  # Detect(P3, P4, P5)
 
 #   - [[3, 15], 1, Concat, [1]]  #版本5 
 #   - [-1, 1, SE, [512]] #SE
