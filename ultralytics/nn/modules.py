@@ -1067,7 +1067,7 @@ class Bi(nn.Module):
         self.cv1 = Conv(c1, c_, 1, 1)
 #         self.cv2 = Conv(c_ * 4, c2, 1, 1)
 #         s=2，p=(k-1)/2
-        self.m = nn.MaxPool2d(kernel_size=k, stride=2, padding=int((k-1) / 2))
+        self.m = nn.MaxPool2d(kernel_size=k, stride=2, padding=1)
 
     def forward(self, x):
         x = self.cv1(x)
