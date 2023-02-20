@@ -1064,7 +1064,8 @@ class Bi(nn.Module):
     def __init__(self, c1, c2, k=3):  # equivalent to SPP(k=(5, 9, 13))
         super().__init__()
         c_ = c1 // 2  # hidden channels
-        self.cv1 = Conv(c1, c_, 1, 1)
+#         self.cv1 = Conv(c1, c_, 1, 1)
+        self.cv1 = Conv(c1, c2, 1, 1)
 #         self.cv2 = Conv(c_ * 4, c2, 1, 1)
 #         s=2，p=(k-1)/2
         self.m = nn.MaxPool2d(kernel_size=k, stride=2, padding=1)
